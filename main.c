@@ -18,6 +18,7 @@ struct Ship {
   struct Point position;
   struct Point velocity;
   float rotation;
+  int thrusting;
 };
 
 struct State {
@@ -49,7 +50,7 @@ void draw_bullets(SDL_Renderer *renderer, struct Bullet bullets[]){
   }
 }
 
-void draw_ship(SDL_Renderer *renderer, struct Ship *ship) {
+void draw_ship(SDL_Renderer *renderer, struct Ship *ship, Uint32 current_time) {
   int ship_size = 30;
 
   struct Point p1 = {
@@ -66,6 +67,29 @@ void draw_ship(SDL_Renderer *renderer, struct Ship *ship) {
       ship->position.x + (ship_size * 0.6) * cos((ship->rotation + 225) * PI / 180),
       ship->position.y + (ship_size * 0.6) * sin((ship->rotation + 225) * PI / 180)
   };
+
+  if (ship->thrusting && ((current_time / 20) % 2 == 0)) {
+
+        struct Point flame1 = {
+            ship->position.x + (ship_size * 0.8) * cos((ship->rotation + 180) * PI / 180),
+            ship->position.y + (ship_size * 0.8) * sin((ship->rotation + 180) * PI / 180)
+        };
+
+        struct Point flame2 = {
+            ship->position.x + (ship_size * 0.5) * cos((ship->rotation + 160) * PI / 180),
+            ship->position.y + (ship_size * 0.5) * sin((ship->rotation + 160) * PI / 180)
+        };
+
+        struct Point flame3 = {
+            ship->position.x + (ship_size * 0.5) * cos((ship->rotation + 200) * PI / 180),
+            ship->position.y + (ship_size * 0.5) * sin((ship->rotation + 200) * PI / 180)
+        };
+
+        SDL_SetRenderDrawColor(renderer, 255, 165, 0, 255);  // Pomarańczowy kolor dla płomieni
+        SDL_RenderDrawLine(renderer, p2.x, p2.y, flame1.x, flame1.y);
+        SDL_RenderDrawLine(renderer, p3.x, p3.y, flame1.x, flame1.y);
+        SDL_RenderDrawLine(renderer, flame2.x, flame2.y, flame3.x, flame3.y);
+    }
 
   // change color to white
   SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -103,7 +127,7 @@ int main(int argc, char *argv[]) {
   int running = 1;
 
   struct Point initial_position = {.x = 50.0f, .y = 50.0f};
-  struct Ship ship = { .position = initial_position, .velocity = 1, .rotation = 50 };
+  struct Ship ship = { .position = initial_position, .velocity = 1, .rotation = 50, .thrusting = 0 };
   struct State state = { .ship = ship };
 
   Uint32 lastTime = SDL_GetTicks(); // Get time before main loop
@@ -163,6 +187,10 @@ int main(int argc, char *argv[]) {
 
       float y_vel_change = sin(state.ship.rotation * PI / 180) * deltaTime * velocity_change_speed_multiplier;
       state.ship.velocity.y += y_vel_change;
+
+      state.ship.thrusting = 1;
+    } else{
+      state.ship.thrusting = 0;
     }
 
     // Update active bullets positions.
@@ -201,7 +229,7 @@ int main(int argc, char *argv[]) {
     // Clear renderer
     SDL_RenderClear(renderer);
 
-    draw_ship(renderer, &state.ship);
+    draw_ship(renderer, &state.ship, currentTime);
     draw_bullets(renderer, bullets);
 
     // black color background
