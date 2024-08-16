@@ -26,20 +26,18 @@ void draw_ship(SDL_Renderer *renderer, struct Ship *ship) {
 
   struct Point p1 = {
       ship->position.x + ship_size * cos(ship->rotation * PI / 180),
-      ship->position.y + ship_size * sin(ship->rotation * PI / 180)};
+      ship->position.y + ship_size * sin(ship->rotation * PI / 180)
+  };
 
-  // Dwa kolejne punkty tworzące podstawę trójkąta
   struct Point p2 = {
-      ship->position.x +
-          (ship_size * 0.6) * cos((ship->rotation + 135) * PI / 180),
-      ship->position.y +
-          (ship_size * 0.6) * sin((ship->rotation + 135) * PI / 180)};
+      ship->position.x + (ship_size * 0.6) * cos((ship->rotation + 135) * PI / 180),
+      ship->position.y + (ship_size * 0.6) * sin((ship->rotation + 135) * PI / 180)
+  };
 
   struct Point p3 = {
-      ship->position.x +
-          (ship_size * 0.6) * cos((ship->rotation + 225) * PI / 180),
-      ship->position.y +
-          (ship_size * 0.6) * sin((ship->rotation + 225) * PI / 180)};
+      ship->position.x + (ship_size * 0.6) * cos((ship->rotation + 225) * PI / 180),
+      ship->position.y + (ship_size * 0.6) * sin((ship->rotation + 225) * PI / 180)
+  };
 
   // change color to white
   SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -68,8 +66,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Renderer creation
-  SDL_Renderer *renderer =
-      SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+  SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
   if (renderer == NULL) {
     SDL_DestroyWindow(window);
@@ -81,21 +78,19 @@ int main(int argc, char *argv[]) {
 
   struct Point initial_position = {.x = 50.0f, .y = 50.0f};
 
-  struct Ship ship = {
-      .position = initial_position, .velocity = 1, .rotation = 50};
+  struct Ship ship = { .position = initial_position, .velocity = 1, .rotation = 50 };
 
-  struct State state = {.ship = ship};
+  struct State state = { .ship = ship };
 
-  Uint32 lastTime = SDL_GetTicks(); // Pobranie czasu na początku pętli
+  Uint32 lastTime = SDL_GetTicks(); // Get time before main loop
 
   float speed_multiplier = 10;
-  float velocity_change_speed_multiplier = 2;
+  float velocity_change_speed_multiplier = 12;
   float rotation_speed_multiplier = 300;
 
   while (running) {
-    Uint32 currentTime = SDL_GetTicks(); // Pobranie aktualnego czasu
-    float deltaTime =
-        (currentTime - lastTime) / 1000.0f; // Obliczenie deltaTime w sekundach
+    Uint32 currentTime = SDL_GetTicks();
+    float deltaTime = (currentTime - lastTime) / 1000.0f;
     lastTime = currentTime;
     while (SDL_PollEvent(&e) != 0) {
       if (e.type == SDL_QUIT) {
@@ -103,7 +98,7 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    // Uzyskanie stanu klawiatury
+    // Keyboard state
     const Uint8 *keyboard_state = SDL_GetKeyboardState(NULL);
 
     if (keyboard_state[SDL_SCANCODE_D]) {
@@ -125,19 +120,18 @@ int main(int argc, char *argv[]) {
     // Going beyond window width/height
     // X axis
     if (state.ship.position.x > GAME_WINDOW_WIDTH) {
-      state.ship.position.x = 0; // Pojawia się po lewej stronie
+      state.ship.position.x = 0;
     } else if (state.ship.position.x < 0) {
-      state.ship.position.x =
-          GAME_WINDOW_WIDTH; // Pojawia się po prawej stronie
+      state.ship.position.x = GAME_WINDOW_WIDTH;
     }
     // Y axis
     if (state.ship.position.y > GAME_WINDOW_HEIGHT) {
-      state.ship.position.y = 0; // Pojawia się na górze
+      state.ship.position.y = 0;
     } else if (state.ship.position.y < 0) {
-      state.ship.position.y = GAME_WINDOW_HEIGHT; // Pojawia się na dole
+      state.ship.position.y = GAME_WINDOW_HEIGHT;
     }
 
-    printf("state.ship.position.x: %d\n", state.ship.position.x);
+    printf("state.ship.position.x: %f\n", state.ship.position.x);
     // Renderer stuff
     // Clear renderer
     SDL_RenderClear(renderer);
