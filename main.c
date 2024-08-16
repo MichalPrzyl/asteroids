@@ -6,6 +6,8 @@
 #define GAME_WINDOW_WIDTH 640
 #define GAME_WINDOW_HEIGHT 480
 
+#define MAX_BULLETS 30
+
 struct Point {
   float x;
   float y;
@@ -20,6 +22,20 @@ struct Ship {
 struct State {
   struct Ship ship;
 };
+
+struct Bullet {
+  struct Point position;
+  struct Point velocity;
+  int active;
+};
+
+void draw_bullets(SDL_Renderer *renderer, struct Bullet bullets[]){
+  for (int i = 0; i < MAX_BULLETS; i++) {
+    if (bullets[i].active){
+      SDL_RenderDrawPoint(renderer, (int)bullets[i].position.x, (int)bullets[i].position.y);
+    }
+  }
+}
 
 void draw_ship(SDL_Renderer *renderer, struct Ship *ship) {
   int ship_size = 30;
@@ -45,8 +61,6 @@ void draw_ship(SDL_Renderer *renderer, struct Ship *ship) {
   SDL_RenderDrawLine(renderer, p1.x, p1.y, p2.x, p2.y);
   SDL_RenderDrawLine(renderer, p2.x, p2.y, p3.x, p3.y);
   SDL_RenderDrawLine(renderer, p3.x, p3.y, p1.x, p1.y);
-
-  /* SDL_RenderDrawLine(renderer, 15, 15, 50, 50); */
 }
 
 int main(int argc, char *argv[]) {
@@ -77,9 +91,7 @@ int main(int argc, char *argv[]) {
   int running = 1;
 
   struct Point initial_position = {.x = 50.0f, .y = 50.0f};
-
   struct Ship ship = { .position = initial_position, .velocity = 1, .rotation = 50 };
-
   struct State state = { .ship = ship };
 
   Uint32 lastTime = SDL_GetTicks(); // Get time before main loop
@@ -87,12 +99,33 @@ int main(int argc, char *argv[]) {
   float speed_multiplier = 10;
   float velocity_change_speed_multiplier = 12;
   float rotation_speed_multiplier = 300;
+  float bullet_speed = 100;
+  // Bullet list
+  struct Bullet bullets[MAX_BULLETS];
 
   while (running) {
     Uint32 currentTime = SDL_GetTicks();
     float deltaTime = (currentTime - lastTime) / 1000.0f;
     lastTime = currentTime;
+
     while (SDL_PollEvent(&e) != 0) {
+     if (e.type == SDL_KEYDOWN) {
+        if (e.key.keysym.sym == SDLK_SPACE) {
+          printf("WAS SHOOT\n");
+          for (int i = 0; i < MAX_BULLETS; i++){
+            // Get first inactive bullet and activate it as an active one.
+            if (!bullets[i].active){
+              bullets[i].active = 1;
+              bullets[i].position = state.ship.position;
+              bullets[i].velocity.x = cos(state.ship.rotation * PI / 180) * bullet_speed;
+              bullets[i].velocity.y = sin(state.ship.rotation * PI / 180) * bullet_speed;
+              break;
+            }
+          }
+      }
+    }
+
+
       if (e.type == SDL_QUIT) {
         running = 0;
       }
@@ -100,6 +133,9 @@ int main(int argc, char *argv[]) {
 
     // Keyboard state
     const Uint8 *keyboard_state = SDL_GetKeyboardState(NULL);
+
+
+
 
     if (keyboard_state[SDL_SCANCODE_D]) {
       state.ship.rotation += 1.0f * deltaTime * rotation_speed_multiplier;
@@ -114,7 +150,25 @@ int main(int argc, char *argv[]) {
       float y_vel_change = sin(state.ship.rotation * PI / 180) * deltaTime * velocity_change_speed_multiplier;
       state.ship.velocity.y += y_vel_change;
     }
+    // Shooting
+    if (keyboard_state[SDL_SCANCODE_SPACE]) {
+    }
 
+    // Update active bullets positions.
+    for (int i = 0; i < MAX_BULLETS; i++){
+      if (bullets[i].active){
+        bullets[i].position.x += bullets[i].velocity.x * deltaTime;
+        bullets[i].position.y += bullets[i].velocity.y * deltaTime;
+      }
+
+      // Check if bullet is outside the window. If so, change it's 'active' field to 0.
+      if (bullets[i].position.x < 0 || bullets[i].position.x > GAME_WINDOW_WIDTH ||
+            bullets[i].position.y < 0 || bullets[i].position.y > GAME_WINDOW_HEIGHT) {
+            bullets[i].active = 0;
+        }
+    }
+    
+    // Update player's ship position.
     state.ship.position.x += state.ship.velocity.x * deltaTime * speed_multiplier;
     state.ship.position.y += state.ship.velocity.y * deltaTime * speed_multiplier;
     // Going beyond window width/height
@@ -131,12 +185,13 @@ int main(int argc, char *argv[]) {
       state.ship.position.y = GAME_WINDOW_HEIGHT;
     }
 
-    printf("state.ship.position.x: %f\n", state.ship.position.x);
+    /* printf("state.ship.position.x: %f\n", state.ship.position.x); */
     // Renderer stuff
     // Clear renderer
     SDL_RenderClear(renderer);
 
     draw_ship(renderer, &state.ship);
+    draw_bullets(renderer, bullets);
 
     // black color background
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
