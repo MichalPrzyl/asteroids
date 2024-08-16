@@ -43,6 +43,34 @@ struct Meteor {
     float size;
 };
 
+void handle_bullet_meteor_collisions(struct Bullet bullets[],
+                                     struct Meteor meteors[]){
+  for (int i = 0; i < MAX_BULLETS; i++) {
+      if (bullets[i].active) {
+          for (int j = 0; j < MAX_METEORS; j++) {
+              if (check_bullet_meteor_collision(&bullets[i], &meteors[j])) {
+                  bullets[i].active = 0;  // Deactivate bullet
+                  // TODO: we can't just move meteor outside because there is logic
+          //
+          //
+                  meteors[j].position.x = -100;  // Move meteor outside the visible window.
+                  meteors[j].velocity.x = 0;
+                  meteors[j].velocity.y = 0;
+                  break; 
+              }
+          }
+      }
+  }
+}
+
+int check_bullet_meteor_collision(struct Bullet *bullet, struct Meteor *meteor) {
+    float distance = sqrt(
+        (bullet->position.x - meteor->position.x) * (bullet->position.x - meteor->position.x) +
+        (bullet->position.y - meteor->position.y) * (bullet->position.y - meteor->position.y)
+    );
+    return distance <= (meteor->size / 2);
+}
+
 void reset_game(int *game_over, 
                 SDL_Renderer *renderer,
                 struct Meteor meteors[],
@@ -340,6 +368,7 @@ int main(int argc, char *argv[]) {
       draw_ship(renderer, &state.ship, currentTime);
       draw_bullets(renderer, bullets);
       draw_meteors(renderer, meteors);
+      handle_bullet_meteor_collisions(bullets, meteors);
 
     }else{
       // When GAME OVER
