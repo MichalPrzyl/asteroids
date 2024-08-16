@@ -1,6 +1,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_render.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include "circle.h"
 
 #define PI 3.14
 #define GAME_WINDOW_WIDTH 640
@@ -8,6 +10,8 @@
 
 #define MAX_BULLETS 30
 #define BULLET_SIZE 4
+
+#define MAX_METEORS 10
 
 struct Point {
   float x;
@@ -30,6 +34,50 @@ struct Bullet {
   struct Point velocity;
   int active;
 };
+
+struct Meteor {
+    struct Point position;
+    struct Point velocity;
+    float size;
+};
+
+void update_meteors_positions(struct Meteor meteors[], float delta_time){
+    // Update active bullets positions.
+    for (int i = 0; i < MAX_METEORS; i++){
+        meteors[i].position.x += meteors[i].velocity.x * delta_time;
+        meteors[i].position.y += meteors[i].velocity.y * delta_time;
+
+      // Check if meteors is outside the window.
+      if (meteors[i].position.x < 0) {
+          meteors[i].position.x = GAME_WINDOW_WIDTH;
+      } else if (meteors[i].position.x > GAME_WINDOW_WIDTH) {
+          meteors[i].position.x = 0;
+      }
+
+      if (meteors[i].position.y < 0) {
+          meteors[i].position.y = GAME_WINDOW_HEIGHT;
+      } else if (meteors[i].position.y > GAME_WINDOW_HEIGHT) {
+          meteors[i].position.y = 0;
+      }
+    }
+}
+
+void init_meteors(SDL_Renderer *renderer, struct Meteor meteors[]) {
+    for (int i = 0; i < MAX_METEORS; i++) {
+        meteors[i].size = rand() % 20 + 20;  // Losowy rozmiar od 20 do 40
+        meteors[i].position.x = rand() % GAME_WINDOW_WIDTH;
+        meteors[i].position.y = rand() % GAME_WINDOW_HEIGHT;
+        meteors[i].velocity.x = (rand() % 50) - 25;  // Losowa prędkość w zakresie -25 do 25
+        meteors[i].velocity.y = (rand() % 50) - 25;
+    }
+}
+
+void draw_meteors(SDL_Renderer *renderer, struct Meteor meteors[]) {
+    SDL_SetRenderDrawColor(renderer, 192, 192, 192, 255);  // Szary kolor dla meteorytów
+    for (int i = 0; i < MAX_METEORS; i++) {
+        draw_circle(renderer, meteors[i].position.x, meteors[i].position.y, meteors[i].size / 2);
+    }
+}
 
 void draw_bullets(SDL_Renderer *renderer, struct Bullet bullets[]){
   for (int i = 0; i < MAX_BULLETS; i++) {
@@ -139,10 +187,14 @@ int main(int argc, char *argv[]) {
 
   // Bullet list
   struct Bullet bullets[MAX_BULLETS];
+  // Meteor list
+  struct Meteor meteors[MAX_METEORS];
+
+  init_meteors(renderer, meteors);
 
   while (running) {
     Uint32 currentTime = SDL_GetTicks();
-    float deltaTime = (currentTime - lastTime) / 1000.0f;
+    float delta_time = (currentTime - lastTime) / 1000.0f;
     lastTime = currentTime;
 
     while (SDL_PollEvent(&e) != 0) {
@@ -176,18 +228,17 @@ int main(int argc, char *argv[]) {
     const Uint8 *keyboard_state = SDL_GetKeyboardState(NULL);
 
     if (keyboard_state[SDL_SCANCODE_D]) {
-      state.ship.rotation += 1.0f * deltaTime * rotation_speed_multiplier;
+      state.ship.rotation += 1.0f * delta_time * rotation_speed_multiplier;
     }
     if (keyboard_state[SDL_SCANCODE_A]) {
-      state.ship.rotation -= 1.0f * deltaTime * rotation_speed_multiplier;
+      state.ship.rotation -= 1.0f * delta_time * rotation_speed_multiplier;
     }
     if (keyboard_state[SDL_SCANCODE_W]) {
-      float x_vel_change = cos(state.ship.rotation * PI / 180) * deltaTime * velocity_change_speed_multiplier;
+      float x_vel_change = cos(state.ship.rotation * PI / 180) * delta_time * velocity_change_speed_multiplier;
       state.ship.velocity.x += x_vel_change;
 
-      float y_vel_change = sin(state.ship.rotation * PI / 180) * deltaTime * velocity_change_speed_multiplier;
+      float y_vel_change = sin(state.ship.rotation * PI / 180) * delta_time * velocity_change_speed_multiplier;
       state.ship.velocity.y += y_vel_change;
-
       state.ship.thrusting = 1;
     } else{
       state.ship.thrusting = 0;
@@ -196,8 +247,8 @@ int main(int argc, char *argv[]) {
     // Update active bullets positions.
     for (int i = 0; i < MAX_BULLETS; i++){
       if (bullets[i].active){
-        bullets[i].position.x += bullets[i].velocity.x * deltaTime;
-        bullets[i].position.y += bullets[i].velocity.y * deltaTime;
+        bullets[i].position.x += bullets[i].velocity.x * delta_time;
+        bullets[i].position.y += bullets[i].velocity.y * delta_time;
       }
 
       // Check if bullet is outside the window. If so, change it's 'active' field to 0.
@@ -206,10 +257,11 @@ int main(int argc, char *argv[]) {
             bullets[i].active = 0;
         }
     }
+    update_meteors_positions(meteors, delta_time);
     
     // Update player's ship position.
-    state.ship.position.x += state.ship.velocity.x * deltaTime * speed_multiplier;
-    state.ship.position.y += state.ship.velocity.y * deltaTime * speed_multiplier;
+    state.ship.position.x += state.ship.velocity.x * delta_time * speed_multiplier;
+    state.ship.position.y += state.ship.velocity.y * delta_time * speed_multiplier;
     // Going beyond window width/height
     // X axis
     if (state.ship.position.x > GAME_WINDOW_WIDTH) {
@@ -231,6 +283,7 @@ int main(int argc, char *argv[]) {
 
     draw_ship(renderer, &state.ship, currentTime);
     draw_bullets(renderer, bullets);
+    draw_meteors(renderer, meteors);
 
     // black color background
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
