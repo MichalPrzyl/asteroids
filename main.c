@@ -13,7 +13,7 @@ struct Point {
 
 struct Ship {
   struct Point position;
-  float velocity;
+  struct Point velocity;
   float rotation;
 };
 
@@ -82,13 +82,14 @@ int main(int argc, char *argv[]) {
   struct Point initial_position = {.x = 50.0f, .y = 50.0f};
 
   struct Ship ship = {
-      .position = initial_position, .velocity = 10, .rotation = 50};
+      .position = initial_position, .velocity = 1, .rotation = 50};
 
   struct State state = {.ship = ship};
 
   Uint32 lastTime = SDL_GetTicks(); // Pobranie czasu na początku pętli
 
-  float speed_multiplier = 300;
+  float speed_multiplier = 10;
+  float velocity_change_speed_multiplier = 2;
   float rotation_speed_multiplier = 300;
 
   while (running) {
@@ -104,21 +105,23 @@ int main(int argc, char *argv[]) {
 
     // Uzyskanie stanu klawiatury
     const Uint8 *keyboard_state = SDL_GetKeyboardState(NULL);
+
     if (keyboard_state[SDL_SCANCODE_D]) {
       state.ship.rotation += 1.0f * deltaTime * rotation_speed_multiplier;
     }
     if (keyboard_state[SDL_SCANCODE_A]) {
       state.ship.rotation -= 1.0f * deltaTime * rotation_speed_multiplier;
     }
-    // New keboard states
     if (keyboard_state[SDL_SCANCODE_W]) {
-      float x_pos_change = 2 * cos(state.ship.rotation * PI / 180) * deltaTime *
-                           speed_multiplier;
-      state.ship.position.x += x_pos_change;
-      state.ship.position.y += 2 * sin(state.ship.rotation * PI / 180) *
-                               deltaTime * speed_multiplier;
+      float x_vel_change = cos(state.ship.rotation * PI / 180) * deltaTime * velocity_change_speed_multiplier;
+      state.ship.velocity.x += x_vel_change;
+
+      float y_vel_change = sin(state.ship.rotation * PI / 180) * deltaTime * velocity_change_speed_multiplier;
+      state.ship.velocity.y += y_vel_change;
     }
 
+    state.ship.position.x += state.ship.velocity.x * deltaTime * speed_multiplier;
+    state.ship.position.y += state.ship.velocity.y * deltaTime * speed_multiplier;
     // Going beyond window width/height
     // X axis
     if (state.ship.position.x > GAME_WINDOW_WIDTH) {
