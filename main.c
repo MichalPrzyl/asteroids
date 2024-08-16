@@ -41,6 +41,7 @@ struct Meteor {
     struct Point position;
     struct Point velocity;
     float size;
+    int active;
 };
 
 void handle_bullet_meteor_collisions(struct Bullet bullets[],
@@ -48,15 +49,16 @@ void handle_bullet_meteor_collisions(struct Bullet bullets[],
   for (int i = 0; i < MAX_BULLETS; i++) {
       if (bullets[i].active) {
           for (int j = 0; j < MAX_METEORS; j++) {
+            if (meteors[j].active){
+
               if (check_bullet_meteor_collision(&bullets[i], &meteors[j])) {
                   bullets[i].active = 0;  // Deactivate bullet
                   // TODO: we can't just move meteor outside because there is logic
-          //
-          //
-                  meteors[j].position.x = -100;  // Move meteor outside the visible window.
+                  meteors[j].active = 0;
                   meteors[j].velocity.x = 0;
                   meteors[j].velocity.y = 0;
                   break; 
+              }
               }
           }
       }
@@ -68,7 +70,7 @@ int check_bullet_meteor_collision(struct Bullet *bullet, struct Meteor *meteor) 
         (bullet->position.x - meteor->position.x) * (bullet->position.x - meteor->position.x) +
         (bullet->position.y - meteor->position.y) * (bullet->position.y - meteor->position.y)
     );
-    return distance <= (meteor->size / 2);
+    return (int)distance <= (meteor->size / 2);
 }
 
 void reset_game(int *game_over, 
@@ -89,9 +91,11 @@ float distance_between_points(struct Point p1, struct Point p2) {
 
 void check_player_collision(struct Ship *ship, struct Meteor meteors[], int *game_over){
   for (int i = 0; i < MAX_METEORS; i++){
-    if (check_player_collisions_with_meteor(ship, meteors[i])){
-      printf("GAME OVER\n");
-      *game_over = 1;
+    if(meteors[i].active){
+      if (check_player_collisions_with_meteor(ship, meteors[i])){
+        printf("GAME OVER\n");
+        *game_over = 1;
+      }
     }
   }
 }
@@ -131,13 +135,16 @@ void init_meteors(SDL_Renderer *renderer, struct Meteor meteors[]) {
         meteors[i].position.y = rand() % GAME_WINDOW_HEIGHT;
         meteors[i].velocity.x = (rand() % 50) - 25;  // Losowa prędkość w zakresie -25 do 25
         meteors[i].velocity.y = (rand() % 50) - 25;
+        meteors[i].active = 1;
     }
 }
 
 void draw_meteors(SDL_Renderer *renderer, struct Meteor meteors[]) {
     SDL_SetRenderDrawColor(renderer, 192, 192, 192, 255);  // Szary kolor dla meteorytów
     for (int i = 0; i < MAX_METEORS; i++) {
+      if (meteors[i].active){
         draw_circle(renderer, meteors[i].position.x, meteors[i].position.y, meteors[i].size / 2);
+      }
     }
 }
 
@@ -258,7 +265,7 @@ int main(int argc, char *argv[]) {
 
   float speed_multiplier = 10;
   float velocity_change_speed_multiplier = 12;
-  float rotation_speed_multiplier = 300;
+  float rotation_speed_multiplier = 100;
   float bullet_speed = 300;
   int game_over = 0;
 
