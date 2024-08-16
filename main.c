@@ -7,6 +7,7 @@
 #define GAME_WINDOW_HEIGHT 480
 
 #define MAX_BULLETS 30
+#define BULLET_SIZE 4
 
 struct Point {
   float x;
@@ -32,7 +33,18 @@ struct Bullet {
 void draw_bullets(SDL_Renderer *renderer, struct Bullet bullets[]){
   for (int i = 0; i < MAX_BULLETS; i++) {
     if (bullets[i].active){
-      SDL_RenderDrawPoint(renderer, (int)bullets[i].position.x, (int)bullets[i].position.y);
+      SDL_Rect bullet_rect;
+
+      // Bullets are just small rectangles.
+      bullet_rect.x = (int)bullets[i].position.x - BULLET_SIZE / 2;
+      bullet_rect.y = (int)bullets[i].position.y - BULLET_SIZE / 2;
+
+      // Fixed bullet size.
+      bullet_rect.w = BULLET_SIZE;
+      bullet_rect.h = BULLET_SIZE;
+
+      // Draw filled rectangle.
+      SDL_RenderFillRect(renderer, &bullet_rect);
     }
   }
 }
@@ -99,7 +111,8 @@ int main(int argc, char *argv[]) {
   float speed_multiplier = 10;
   float velocity_change_speed_multiplier = 12;
   float rotation_speed_multiplier = 300;
-  float bullet_speed = 100;
+  float bullet_speed = 300;
+
   // Bullet list
   struct Bullet bullets[MAX_BULLETS];
 
@@ -109,23 +122,27 @@ int main(int argc, char *argv[]) {
     lastTime = currentTime;
 
     while (SDL_PollEvent(&e) != 0) {
-     if (e.type == SDL_KEYDOWN) {
+      if (e.type == SDL_KEYDOWN) {
+
+        // Shooting
         if (e.key.keysym.sym == SDLK_SPACE) {
-          printf("WAS SHOOT\n");
           for (int i = 0; i < MAX_BULLETS; i++){
             // Get first inactive bullet and activate it as an active one.
             if (!bullets[i].active){
               bullets[i].active = 1;
-              bullets[i].position = state.ship.position;
+
+              // offsetting the initial position of new bullet
+              float offset_distance = 30.0f; // how far from center of player
+              bullets[i].position.x = state.ship.position.x + offset_distance * cos(state.ship.rotation * PI / 180);
+              bullets[i].position.y = state.ship.position.y + offset_distance * sin(state.ship.rotation * PI / 180);
+
               bullets[i].velocity.x = cos(state.ship.rotation * PI / 180) * bullet_speed;
               bullets[i].velocity.y = sin(state.ship.rotation * PI / 180) * bullet_speed;
               break;
             }
           }
+        }
       }
-    }
-
-
       if (e.type == SDL_QUIT) {
         running = 0;
       }
@@ -133,9 +150,6 @@ int main(int argc, char *argv[]) {
 
     // Keyboard state
     const Uint8 *keyboard_state = SDL_GetKeyboardState(NULL);
-
-
-
 
     if (keyboard_state[SDL_SCANCODE_D]) {
       state.ship.rotation += 1.0f * deltaTime * rotation_speed_multiplier;
@@ -149,9 +163,6 @@ int main(int argc, char *argv[]) {
 
       float y_vel_change = sin(state.ship.rotation * PI / 180) * deltaTime * velocity_change_speed_multiplier;
       state.ship.velocity.y += y_vel_change;
-    }
-    // Shooting
-    if (keyboard_state[SDL_SCANCODE_SPACE]) {
     }
 
     // Update active bullets positions.
